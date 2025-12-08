@@ -27,7 +27,10 @@ app.get("/", (req: Request, res: Response) => {
     path: req.path,
   });
 });
-
+const currentDate = new Date();
+console.log(currentDate);
+const startDate = new Date("2024-01-15");
+console.log(startDate);
 app.listen(5000, () => {
   console.log(`server is running in port 5000`);
 });

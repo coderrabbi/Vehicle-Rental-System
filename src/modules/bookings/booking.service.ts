@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import { pool } from "../../Database/db";
 import { Roles } from "../auth/auth.constant";
 
@@ -67,12 +68,39 @@ const getALlBookings = async (payload: Record<string, unknown>) => {
     }
   }
 };
-const updateBookings = async () => {
-  const result = await pool.query(`
-        
-        SELECT * FROM bookings
-        
-        `);
-  return result;
+const updateBookings = async (payload: Record<string, unknown>) => {
+  const { user, params, body } = payload as {
+    user: string;
+    params: string;
+    status: string;
+  };
+  const status = body.status;
+  const currentDate = new Date().toISOString().split("T")[0];
+  if (user.role === Roles.admin || Roles.customer) {
+    const rentStartDate = await pool.query(
+      `
+      SELECT rent_start_date FROM bookings WHERE id = $1
+      `,
+      [params.id]
+    );
+    const rentDate = rentStartDate.rows[0].rent_start_date;
+
+    if (rentDate >= currentDate) {
+      const result = await pool.query(
+        `  UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *
+            `,
+        [status, params.id]
+      );
+      console.log(result);
+    }
+    
+  } else {
+    throw new Error("You are not allowed  to edit this");
+  }
 };
-export const BookingServices = { createBookings, getALlBookings };
+
+export const BookingServices = {
+  createBookings,
+  getALlBookings,
+  updateBookings,
+};
