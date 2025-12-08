@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { BookingServices } from "./booking.service";
-import { Roles } from "../auth/auth.constant";
 
 const createBookings = async (req: Request, res: Response) => {
   try {
@@ -43,8 +42,8 @@ const updateBookings = async (req: Request, res: Response) => {
     });
     return res.status(200).json({
       success: true,
-      message: "Bookings retrieved successfully",
-      data: result,
+      message: "Booking cancelled successfully",
+      data: result.rows[0],
     });
   } catch (error: any) {
     return res.status(500).json({

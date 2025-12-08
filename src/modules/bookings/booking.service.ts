@@ -1,4 +1,3 @@
-import type { Request } from "express";
 import { pool } from "../../Database/db";
 import { Roles } from "../auth/auth.constant";
 
@@ -72,11 +71,25 @@ const updateBookings = async (payload: Record<string, unknown>) => {
   const { user, params, body } = payload as {
     user: string;
     params: string;
-    status: string;
+    body: string;
   };
+
   const status = body.status;
+
   const currentDate = new Date().toISOString().split("T")[0];
-  if (user.role === Roles.admin || Roles.customer) {
+  if (user.role === Roles.admin) {
+    if (status === "returned") {
+      const result = await pool.query(
+        `  UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *
+            `,
+        [status, params.id]
+      );
+      return result;
+    } else {
+      throw new Error("Please Enter the value 'cancelled' ");
+    }
+  }
+  if (user.role === Roles.customer) {
     const rentStartDate = await pool.query(
       `
       SELECT rent_start_date FROM bookings WHERE id = $1
@@ -85,17 +98,18 @@ const updateBookings = async (payload: Record<string, unknown>) => {
     );
     const rentDate = rentStartDate.rows[0].rent_start_date;
 
-    if (rentDate >= currentDate) {
+    if (rentDate >= currentDate && status === "cancelled") {
       const result = await pool.query(
         `  UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *
             `,
         [status, params.id]
       );
-      console.log(result);
+      return result;
+    } else {
+      throw new Error("Please Enter the value 'cancelled' ");
     }
-    
   } else {
-    throw new Error("You are not allowed  to edit this");
+    throw new Error("You are not allow to edit this");
   }
 };
 
@@ -103,4 +117,5 @@ export const BookingServices = {
   createBookings,
   getALlBookings,
   updateBookings,
+  //   markAsReturned,
 };
