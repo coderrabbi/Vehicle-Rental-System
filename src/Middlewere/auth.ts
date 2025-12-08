@@ -1,41 +1,36 @@
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
 import { secret } from "../modules/auth/auth.service";
 import { pool } from "../Database/db";
-import jwt, { type JwtPayload } from "jsonwebtoken";
 
-const auth = () => {
+const auth = (...role: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const token = req.headers.authorization;
-      console.log("Token:", token);
-
-      if (!token) {
-        return res.status(401).json({ error: "Token required" });
-      }
-
-      const decode = jwt.verify(token, secret) as JwtPayload;
-      console.log("Decoded:", decode);
-
-      // CORRECT: Parameters as second argument
-      const result = await pool.query(
-        `SELECT * FROM users WHERE email=$1`,
-        [decode.email] // This is the correct way
-      );
-
-      console.log("Query result:", result.rows);
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: "User not found!" });
-      }
-
-      // Attach user to request
-      (req as any).user = result.rows[0];
-
-      next();
-    } catch (error) {
-      console.error("Auth error:", error);
-      return res.status(401).json({ error: "Authentication failed" });
+    const authHeader = req.headers.authorization;
+    console.log(authHeader);
+    if (!authHeader) {
+      throw new Error("user unvalid");
     }
+    const token = authHeader.split(" ")[1] as string;
+    const decode = jwt.verify(token, secret) as JwtPayload;
+    const user = await pool.query(
+      `
+      SELECT * FROM users WHERE email=$1
+`,
+      [decode.email]
+    );
+    if (user.rows.length === 0) {
+      throw new Error("User not found!");
+    }
+    req.user = decode;
+
+    if (role.length && !role.includes(decode.role)) {
+      res.status(403).json({
+        success: false,
+        message: "You have no permission",
+        error: "You have no permission",
+      });
+    }
+    next();
   };
 };
 export default auth;

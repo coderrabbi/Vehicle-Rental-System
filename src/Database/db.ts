@@ -7,7 +7,6 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 export const pool = new Pool({
   connectionString: `${process.env.CONNECT_STR}`,
 });
-console.log(`${process.env.CONNECT_STR}`);
 export const initDB = async () => {
   await pool.query(
     `CREATE TABLE IF NOT EXISTS users(
@@ -28,6 +27,17 @@ export const initDB = async () => {
       registration_number VARCHAR(255) UNIQUE NOT NULL,
       daily_rent_price DECIMAL(10,2) NOT NULL CHECK (daily_rent_price > 0),
       availability_status VARCHAR(50) NOT NULL
+    )`
+  );
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS bookings(
+    id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES users(id) ON DELETE CASCADE,
+    vehicle_id INT REFERENCES vehicles(id) ON DELETE CASCADE,
+    rent_start_date VARCHAR(200) NOT NULL,
+    rent_end_date VARCHAR(200) NOT NULL,
+    total_price DECIMAL(10,2) NOT NULL CHECK (total_price > 0),
+    status VARCHAR(50)
     )`
   );
   console.log("database connected");

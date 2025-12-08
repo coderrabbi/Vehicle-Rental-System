@@ -29,5 +29,28 @@ const gellAlluser = async (req: Request, res: Response) => {
     });
   }
 };
+const updateSingleUser = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    const updatedData = req.body;
+    const result = await UserService.updateUserDetailsToDB({ updatedData, id });
+    if (result.rows.length > 0) {
+      res.status(200).json({
+        success: true,
+        message: "updated successfully",
+        user: result.rows,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "User Not Found",
+      });
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
-export const Usercontroller = { createUser, gellAlluser };
+export const Usercontroller = { createUser, gellAlluser, updateSingleUser };
