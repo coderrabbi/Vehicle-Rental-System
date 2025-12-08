@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { UserService } from "./user.service";
+import { Roles } from "../auth/auth.constant";
 
 const createUser = async (req: Request, res: Response) => {
   try {
@@ -31,9 +32,21 @@ const gellAlluser = async (req: Request, res: Response) => {
 };
 const updateSingleUser = async (req: Request, res: Response) => {
   try {
+    const requestingUser = req.user;
     const id = req.params.id;
     const updatedData = req.body;
-    const result = await UserService.updateUserDetailsToDB({ updatedData, id });
+    const hasPermission =
+      requestingUser?.id === id || requestingUser?.role === Roles.admin;
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to update this user",
+      });
+    }
+    const result = await UserService.updateUserDetailsToDB({
+      updatedData,
+      id,
+    });
     if (result.rows.length > 0) {
       res.status(200).json({
         success: true,
@@ -53,4 +66,23 @@ const updateSingleUser = async (req: Request, res: Response) => {
   }
 };
 
-export const Usercontroller = { createUser, gellAlluser, updateSingleUser };
+const deleteUser = async (req: Request, res: Response) => {
+  try {
+    
+    const result = await UserService.deleteUser(req.params);
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+export const Usercontroller = {
+  createUser,
+  gellAlluser,
+  updateSingleUser,
+  deleteUser,
+};

@@ -5,6 +5,7 @@ import { authRouter } from "./modules/auth/auth.route";
 import { vehicleRoute } from "./modules/vehicles/vehicles.route";
 import path from "path";
 import dotenv from "dotenv";
+import { bookingRouter } from "./modules/bookings/booking.route";
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 const app = express();
@@ -18,6 +19,7 @@ app.use("/api/v1/signup", userRoute);
 app.use("/api/v1/signin", authRouter);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/vehicles", vehicleRoute);
+app.use("/api/v1/bookings", bookingRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({

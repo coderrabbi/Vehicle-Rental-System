@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { pool } from "../../Database/db";
+import Verify from "../../Middlewere/verify";
 
 const createUserToDb = async (payload: Record<string, unknown>) => {
   const { name, email, password, phone, role } = payload;
@@ -33,9 +34,6 @@ const updateUserDetailsToDB = async (payload: Record<string, unknown>) => {
     phone: string;
     role: string;
   };
-
-  
-
   const result = await pool.query(
     `
       UPDATE users SET name=$1, email=$2,phone=$3,role=$4 WHERE id=$5 RETURNING *
@@ -45,8 +43,34 @@ const updateUserDetailsToDB = async (payload: Record<string, unknown>) => {
   return result;
 };
 
+const deleteUser = async (payload: Record<string, unknown>) => {
+  const activeBookingsCheck = await pool.query(
+    `SELECT COUNT(*) as active_count 
+         FROM bookings 
+         WHERE customer_id = $1 
+         AND status = 'active'`,
+    [payload.id]
+  );
+  const activeBookingsCount = parseInt(
+    activeBookingsCheck.rows[0].active_count
+  );
+
+  if (activeBookingsCount > 0) {
+    throw new Error(
+      `Cannot delete user with ${activeBookingsCount} active bookings. Cancel all active bookings first.`
+    );
+  }
+  const result = await pool.query(
+    `
+    DELETE FROM users where id=$1
+    `,
+    [payload.id]
+  );
+  return result;
+};
 export const UserService = {
   createUserToDb,
   getallUserFromDB,
   updateUserDetailsToDB,
+  deleteUser,
 };

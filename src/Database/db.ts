@@ -37,7 +37,7 @@ export const initDB = async () => {
     rent_start_date VARCHAR(200) NOT NULL,
     rent_end_date VARCHAR(200) NOT NULL,
     total_price DECIMAL(10,2) NOT NULL CHECK (total_price > 0),
-    status VARCHAR(50)
+    status VARCHAR(50) DEFAULT 'active'
     )`
   );
   console.log("database connected");

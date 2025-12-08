@@ -27,7 +27,7 @@ const loginToDb = async (email: string, password: string) => {
   };
 
   const token = jwt.sign(JwtPayload, secret, { expiresIn: "7d" });
-  
+
   return { token, user: user.rows[0] };
 };
 export const AuthService = { loginToDb };
