@@ -68,7 +68,6 @@ const updateSingleUser = async (req: Request, res: Response) => {
 
 const deleteUser = async (req: Request, res: Response) => {
   try {
-    
     const result = await UserService.deleteUser(req.params);
     return res.status(200).json({
       success: true,

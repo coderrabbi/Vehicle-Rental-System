@@ -12,7 +12,7 @@ const createBookings = async (payload: Record<string, unknown>) => {
 
   const vehicleResult = await pool.query(
     `
-      SELECT daily_rent_price FROM vehicles WHERE id = $1
+      SELECT daily_rent_price,availability_status FROM vehicles WHERE id = $1
       `,
     [vehicle_id]
   );
@@ -32,17 +32,24 @@ const createBookings = async (payload: Record<string, unknown>) => {
   const numberOfDays = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
 
   const totalPrice = dailyRentPrice * numberOfDays;
-
-  const result = await pool.query(
-    `
+  if (vehicleResult.rows[0].availability_status === "available") {
+    const result = await pool.query(
+      `
       INSERT INTO bookings(customer_id, vehicle_id, rent_start_date, rent_end_date, total_price) 
       VALUES($1, $2, $3, $4, $5) 
       RETURNING *
       `,
-    [customer_id, vehicle_id, rent_start_date, rent_end_date, totalPrice]
-  );
-
-  return result.rows[0];
+      [customer_id, vehicle_id, rent_start_date, rent_end_date, totalPrice]
+    );
+    await pool.query(
+      `
+      UPDATE vehicles SET availability_status = 'booked' WHERE id = $1`,
+      [vehicle_id]
+    );
+    return result.rows[0];
+  } else {
+    throw new Error("Vehicle is not available for booking");
+  }
 };
 
 const getALlBookings = async (payload: Record<string, unknown>) => {
@@ -69,20 +76,23 @@ const getALlBookings = async (payload: Record<string, unknown>) => {
 };
 const updateBookings = async (payload: Record<string, unknown>) => {
   const { user, params, body } = payload as {
-    user: string;
-    params: string;
-    body: string;
+    user: { role: string };
+    params: { id: string };
+    body: { status: string };
   };
-
   const status = body.status;
+  const currentDate = new Date().toISOString().split("T")[0] ?? "";
 
-  const currentDate = new Date().toISOString().split("T")[0];
   if (user.role === Roles.admin) {
     if (status === "returned") {
       const result = await pool.query(
         `  UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *
             `,
-        [status, params.id]
+        [status, params.id as string]
+      );
+      await pool.query(
+        `UPDATE vehicles SET availability_status = 'available' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = $1)`,
+        [params.id as string]
       );
       return result;
     } else {
@@ -111,6 +121,8 @@ const updateBookings = async (payload: Record<string, unknown>) => {
   } else {
     throw new Error("You are not allow to edit this");
   }
+  
+
 };
 
 export const BookingServices = {

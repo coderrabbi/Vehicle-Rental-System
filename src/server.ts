@@ -15,8 +15,8 @@ app.use(express.json());
 
 initDB();
 
-app.use("/api/v1/signup", userRoute);
-app.use("/api/v1/signin", authRouter);
+app.use("/api/v1/auth/signup", userRoute);
+app.use("/api/v1/auth/signin", authRouter);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/vehicles", vehicleRoute);
 app.use("/api/v1/bookings", bookingRouter);
